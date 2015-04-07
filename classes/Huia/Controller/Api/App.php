@@ -8,6 +8,8 @@ class Huia_Controller_Api_App extends Controller {
 
 	public $model_name = NULL;
 
+	protected static $_has_user = array();
+
 	// Colocar isso no request
 	public function json($data)
 	{
@@ -18,8 +20,11 @@ class Huia_Controller_Api_App extends Controller {
 
 	protected function has_user()
 	{
-		$has_user = Arr::get($this->model->list_columns(), 'user_id');
-		return (Auth::instance()->logged_in() AND $has_user);
+		if ( ! isset(Controller_Api_App::$_has_user[$this->model_name]))
+		{
+			Controller_Api_App::$_has_user[$this->model_name] = Arr::get($this->model->list_columns(), 'user_id');
+		}
+		return Controller_Api_App::$_has_user[$this->model_name];
 	}
 
 	public function before()
@@ -88,7 +93,12 @@ class Huia_Controller_Api_App extends Controller {
 		// return only user data
 		if ($this->has_user())
 		{
-			$this->model->where('user_id', '=', Auth::instance()->get_user()->id);
+			$user = Auth::instance()->get_user();
+			if ($this->request->param('id') AND ! $user)
+			{
+				throw HTTP_Exception::factory(403, 'This object is not yours!');
+			}
+			$this->model->where('user_id', '=', ($user) ? $user->id : NULL);
 		}
 
 		$result = ($this->request->param('id')) ? $this->model->find()->all_as_array() : $this->model->all_as_array();
