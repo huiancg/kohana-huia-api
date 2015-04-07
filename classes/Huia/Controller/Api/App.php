@@ -1,12 +1,20 @@
 <?php defined('SYSPATH') OR die('No direct script access.');
 
-class Huia_Controller_Api_App extends Controller_App {
+class Huia_Controller_Api_App extends Controller {
 
 	public $models = array();
 
 	public $model = NULL;
 
 	public $model_name = NULL;
+
+	// Colocar isso no request
+	public function json($data)
+	{
+		$this->template = NULL;
+		$this->response->headers('Content-Type', 'application/json; charset=utf-8');
+		$this->response->body(json_encode($data));
+	}
 
 	protected function has_user()
 	{
@@ -20,13 +28,13 @@ class Huia_Controller_Api_App extends Controller_App {
 
 		$this->models = ORM::get_models();
 
-		if ( ! $this->request->param('model'))
+		$this->model_name = ($this->request->param('model')) ? $this->request->param('model') : $this->request->controller();
+		
+		if ( ! $this->model_name OR $this->model_name === 'App')
 		{
 			return;
 		}
-
 		
-		$this->model_name = ($this->request->param('model')) ? $this->request->param('model') : $this->request->param('controller');
 		$this->model_name = ORM::get_model_name($this->model_name);
 		$this->model = ORM::factory($this->model_name);
 
@@ -38,10 +46,12 @@ class Huia_Controller_Api_App extends Controller_App {
 
 	public function action_index()
 	{
-		if ( ! $this->request->param('model'))
+		if ( ! $this->model_name OR $this->model_name === 'App')
 		{
 			$services = array();
-			foreach ($this->models as $model)
+			$models = $this->models;
+			$models[] = 'User';
+			foreach ($models as $model)
 			{
 				$url = Kohana::$base_url . 'api/' . strtolower($model) . '/';
 				$services[$model] = $url;
@@ -81,7 +91,7 @@ class Huia_Controller_Api_App extends Controller_App {
 			$this->model->where('user_id', '=', Auth::instance()->get_user()->id);
 		}
 
-		$result = ($this->request->param('id')) ? $this->model->find()->as_array() : $this->model->all_as_array();
+		$result = ($this->request->param('id')) ? $this->model->find()->all_as_array() : $this->model->all_as_array();
 
 		$result = $this->filter_expected($result);
 		
@@ -133,7 +143,7 @@ class Huia_Controller_Api_App extends Controller_App {
 
 			if ($this->model->user_id != NULL AND Arr::get($values, 'user_id') != $user_id)
 			{
-				throw HTTP_Exception_403::factory('This object is not yours!');;
+				throw HTTP_Exception_403::factory(403, 'This object is not yours!');
 			}
 			
 			$values['user_id'] = $user_id;
