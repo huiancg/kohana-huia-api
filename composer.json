@@ -1,0 +1,15 @@
+
+{
+  "name": "huia/kohana-huia-api",
+  "type": "kohana-module",
+  "require": {
+    "composer/installers": "~1.0",
+    "kohana/core":         ">=3.3",
+    "php":                 ">=5.3.3"
+  },
+  "extra": {
+    "installer-paths": {
+      "vendor/{$vendor}/{$name}": ["type:kohana-module"]
+    }
+  }
+}
