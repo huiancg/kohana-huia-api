@@ -6,6 +6,8 @@ class Huia_Controller_Api_App extends Controller {
 
 	public $model = NULL;
 
+	public $model_id = NULL;
+
 	public $model_name = NULL;
 
 	protected static $_has_user = array();
@@ -39,14 +41,10 @@ class Huia_Controller_Api_App extends Controller {
 		{
 			return;
 		}
-		
-		$this->model_name = ORM::get_model_name($this->model_name);
-		$this->model = ORM::factory($this->model_name);
 
-		if ($this->request->param('id'))
-		{
-			$this->model->where('id', '=', $this->request->param('id'));
-		}
+		$this->model_id = Arr::get($this->request->post(), 'id', $this->request->param('id'));
+		$this->model_name = ORM::get_model_name($this->model_name);
+		$this->model = ORM::factory($this->model_name, $this->model_id);
 	}
 
 	public function action_index()
@@ -66,15 +64,11 @@ class Huia_Controller_Api_App extends Controller {
 
 		if ($this->request->method() === Request::POST)
 		{
-			$this->post($this->request->post());
+			$this->save($this->request->post());
 		}
 		else if ($this->request->method() === Request::GET)
 		{
 			$this->get();
-		}
-		else if ($this->request->method() === Request::PUT)
-		{
-			$this->put($this->request->put());
 		}
 		else if ($this->request->method() === Request::DELETE)
 		{
@@ -149,28 +143,56 @@ class Huia_Controller_Api_App extends Controller {
 	{
 		if ($this->has_user())
 		{
-			$user_id = Auth::instance()->get_user()->id;
+			$user = Auth::instance()->get_user();
 
-			if ($this->model->user_id != NULL AND Arr::get($values, 'user_id') != $user_id)
+			if ( ! $user)
 			{
-				throw HTTP_Exception_403::factory(403, 'This object is not yours!');
+				throw HTTP_Exception::factory(403, 'Login required!');
+			}
+
+			if ($this->model->user_id != NULL AND $this->model->user_id != $user->id)
+			{
+				throw HTTP_Exception::factory(403, 'This object is not yours!');
 			}
 			
-			$values['user_id'] = $user_id;
+			$values['user_id'] = $user->id;
 		}
 		return $values;
 	}
 
-	// update
-	public function post($values)
+	public function files()
+	{
+		if (isset($_FILES))       	
+		{     
+			foreach($_FILES as $name => $file)
+			{
+				if (Upload::not_empty($file))
+				{
+					$filename = uniqid().'_'.$file['name'];
+					$filename = preg_replace('/\s+/u', '_', $filename);
+					$dir = DOCROOT.'public'.DIRECTORY_SEPARATOR.'upload'.DIRECTORY_SEPARATOR.strtolower($this->model_name);
+
+					create_dir($dir);
+
+					Upload::save($file, $filename, $dir);
+					$this->model->$name = $filename;
+				}
+			}
+		}
+	}
+
+	// save
+	public function save($values, $update = FALSE)
 	{
 		$values = $this->filter_expected($values);
 		$values = $this->filter_user($values);
-		
+
 		$this->model->values($values);
 
 		try
 		{
+			$this->files();
+
 			$this->model->save();
 			
 			// add has many
@@ -191,7 +213,7 @@ class Huia_Controller_Api_App extends Controller {
 				}
 			}
 
-			return $this->json($this->model->as_array());
+			return $this->json($this->model->all_as_array());
 		}
 		catch (ORM_Validation_Exception $e)
 		{
@@ -202,12 +224,6 @@ class Huia_Controller_Api_App extends Controller {
 			}
 			$this->json(array('errors' => $errors));
 		}
-	}
-
-	// create and overwrite
-	public function put()
-	{
-		$this->json(array('PUT'));
 	}
 
 	public function delete()
