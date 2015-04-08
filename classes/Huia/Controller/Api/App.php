@@ -81,7 +81,7 @@ class Huia_Controller_Api_App extends Controller {
 		$count = clone $this->model;
 		if ($this->request->param('id') AND ! $count->count_all())
 		{
-			throw HTTP_Exception_404::factory('Not found!');;
+			throw HTTP_Exception::factory(404, 'Not found!');;
 		}
 
 		// return only user data
@@ -228,7 +228,17 @@ class Huia_Controller_Api_App extends Controller {
 
 	public function delete()
 	{
-		$this->json(array('DELETE'));
+		$values = $this->model->as_array();
+		
+		if ( ! Arr::get($values, 'id') OR ! $this->request->param('id'))
+		{
+			throw HTTP_Exception::factory(404, 'Not found!');
+		}
+		
+		// check user
+		$values = $this->filter_user($values);
+		
+		$this->model->delete();
 	}
 
 }
