@@ -4,11 +4,17 @@ class Huia_Controller_Api_App extends Controller {
 
 	public $models = array();
 
+	public $query = NULL;
+
 	public $model = NULL;
 
 	public $model_id = NULL;
 
 	public $model_name = NULL;
+
+	const OPERATIONS = array('=', '<', '<=', '>', '>=', '!=', 'in', 'between', 'not in', 'not between', 'like', 'null', 'not null');
+	
+	const DIRECTIONS = array('ASC', 'DESC', 'RAND()');
 
 	protected static $_has_user = array();
 
@@ -44,7 +50,83 @@ class Huia_Controller_Api_App extends Controller {
 
 		$this->model_id = Arr::get($this->request->post(), 'id', $this->request->param('id'));
 		$this->model_name = ORM::get_model_name($this->model_name);
-		$this->model = ORM::factory($this->model_name, $this->model_id);
+		
+		$this->model = ORM::factory($this->model_name);
+		
+		if ($this->model_id)
+		{
+			$this->model->where('id', '=', $this->model_id);
+		}
+
+		$this->query();
+	}
+
+	public function direction($direction)
+	{
+		if ( ! in_array($direction, self::DIRECTIONS))
+		{
+			throw HTTP_Exception::factory(403, __('Invalid direction \':direction\'.', array(':operation' => $operation)));
+		}
+		return strtoupper($direction);
+	}
+
+	public function operation($operation)
+	{
+		if ( ! in_array($operation, self::OPERATIONS))
+		{
+			throw HTTP_Exception::factory(403, __('Invalid operation \':operation\'.', array(':operation' => $operation)));
+		}
+		return strtoupper($operation);
+	}
+
+	public function query()
+	{
+		$this->query = @json_decode($this->request->post('query'));
+
+		if ( ! $this->query)
+		{
+			return;
+		}
+
+		foreach ((array)$this->query as $query)
+		{
+			switch ($query[0])
+			{
+				case 'where':
+				case 'or':
+					$this->model->{$query[0]}($query[1], self::operation($query[2]), $query[3]);
+					break;
+				
+				case 'order_by':
+					$field = Arr::get($query, 1);
+					$direction = Arr::get($query, 2);
+					
+					// random
+					if ($field === 'RAND()')
+					{
+						$field = DB::expr('RAND()');
+					}
+					
+					$this->model->order_by($field, $direction);
+					break;
+
+				case 'limit':
+				case 'offset':
+				case 'distinct':
+				case 'group_by':
+					$this->model->{$query[0]}($query[1]);
+					break;
+
+				case 'sum':
+					$this->model->select(array(DB::expr('SUM('.$query[1].')'), 'total_'.$query[1]));
+					break;
+
+				default:
+					throw HTTP_Exception::factory(403, __('Invalid method :method!', array(':method' => $query[0])));
+					break;
+			}
+		}
+
 	}
 
 	public function action_index()
@@ -62,15 +144,18 @@ class Huia_Controller_Api_App extends Controller {
 			return $this->json($services);
 		}
 
-		if ($this->request->method() === Request::POST)
+		$method = $this->request->post('_method');
+		$method = ($method) ? $method : $this->request->method();
+
+		if ($method === Request::POST)
 		{
 			$this->save($this->request->post());
 		}
-		else if ($this->request->method() === Request::GET)
+		else if ($method === Request::GET)
 		{
 			$this->get();
 		}
-		else if ($this->request->method() === Request::DELETE)
+		else if ($method === Request::DELETE)
 		{
 			$this->delete();
 		}
@@ -78,9 +163,11 @@ class Huia_Controller_Api_App extends Controller {
 
 	public function get()
 	{
-		$caching = Kohana::$caching AND Session::instance()->get('auth_user');
+		$_caching = $this->request->post('_caching');
+
+		$caching = Kohana::$caching AND Session::instance()->get('auth_user') AND $_caching;
 		
-		$key = 'api.'. $this->model_name . '.' . $this->model_id;
+		$key = 'api.'. $this->model_name . '.' . $this->model_id . '.' . $this->request->post('query');
 
 		if ($caching)
 		{
@@ -114,7 +201,7 @@ class Huia_Controller_Api_App extends Controller {
 
 		if ($caching)
 		{
-			Cache::instance()->set($key, $result);
+			Cache::instance()->set($key, $result, $_caching);
 		}
 		
 		return $this->json($result);
