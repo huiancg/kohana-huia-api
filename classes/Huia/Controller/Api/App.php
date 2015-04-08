@@ -78,6 +78,19 @@ class Huia_Controller_Api_App extends Controller {
 
 	public function get()
 	{
+		$caching = Kohana::$caching AND Session::instance()->get('auth_user');
+		
+		$key = 'api.'. $this->model_name . '.' . $this->model_id;
+
+		if ($caching)
+		{
+			if ($result = Cache::instance()->get($key))
+			{
+				$this->response->headers('From-Cache', '1');
+				return $this->json($result);
+			}
+		}
+
 		$count = clone $this->model;
 		if ($this->request->param('id') AND ! $count->count_all())
 		{
@@ -98,6 +111,11 @@ class Huia_Controller_Api_App extends Controller {
 		$result = ($this->request->param('id')) ? $this->model->find()->all_as_array() : $this->model->all_as_array();
 
 		$result = $this->filter_expected($result);
+
+		if ($caching)
+		{
+			Cache::instance()->set($key, $result);
+		}
 		
 		return $this->json($result);
 	}
