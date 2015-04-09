@@ -18,6 +18,8 @@ class Huia_Controller_Api_App extends Controller {
 
 	protected static $_has_user = array();
 
+	protected static $_config = NULL;
+
 	// Colocar isso no request
 	public function json($data)
 	{
@@ -33,6 +35,15 @@ class Huia_Controller_Api_App extends Controller {
 			Controller_Api_App::$_has_user[$this->model_name] = Arr::get($this->model->list_columns(), 'user_id');
 		}
 		return Controller_Api_App::$_has_user[$this->model_name];
+	}
+
+	public function config($group, $type, $model_name = NULL)
+	{
+		$model_name = ($model_name) ? $model_name : $this->model_name;
+		$config = (self::$_config === NULL) ? self::$_config = Kohana::$config->load('huia/api') : self::$_config;
+		$custom = $config->get('custom_'.$group);
+		$regexp = Arr::path($custom, strtolower(Inflector::singular($model_name)).'.'.$type);
+		return ($regexp !== NULL) ? $regexp : Arr::get($config->get($group), $type);
 	}
 
 	public function before()
@@ -93,6 +104,8 @@ class Huia_Controller_Api_App extends Controller {
 			switch ($query[0])
 			{
 				case 'where':
+				case 'open_where':
+				case 'close_where':
 				case 'or':
 					$this->model->{$query[0]}($query[1], self::operation($query[2]), $query[3]);
 					break;
@@ -169,6 +182,8 @@ class Huia_Controller_Api_App extends Controller {
 		
 		$key = 'api.'. $this->model_name . '.' . $this->model_id . '.' . $this->request->post('query');
 
+		$user = FALSE;
+
 		if ($caching)
 		{
 			if ($result = Cache::instance()->get($key))
@@ -184,6 +199,8 @@ class Huia_Controller_Api_App extends Controller {
 			throw HTTP_Exception::factory(404, 'Not found!');;
 		}
 
+		$read = $this->config('permissions', 'read');
+
 		// return only user data
 		if ($this->has_user())
 		{
@@ -192,7 +209,37 @@ class Huia_Controller_Api_App extends Controller {
 			{
 				throw HTTP_Exception::factory(403, 'This object is not yours!');
 			}
+
+			$read = TRUE;
+			
 			$this->model->where('user_id', '=', ($user) ? $user->id : NULL);
+		}
+
+		$role_read = $this->config('permissions', 'role_read');
+		if ($role_read)
+		{
+			$user = ($user !== FALSE) ? $user : Auth::instance()->get_user();
+			if ( ! $user OR ! $user->has('roles', ORM::factory('Role')->where('name', 'IN', $role_read)))
+			{
+				throw HTTP_Exception::factory(403, 'This object require role_read permission!');
+			}
+
+			$read = TRUE;
+		}
+		else if ($this->has_user())
+		{
+			$self_read = $this->config('permissions', 'self_read');
+			if ( ! $self_read)
+			{
+				throw HTTP_Exception::factory(403, 'This object require self_read permission!');
+			}
+
+			$read = TRUE;
+		}
+
+		if ( ! $read)
+		{
+			throw HTTP_Exception::factory(403, 'This object require read permission!');
 		}
 
 		$result = ($this->request->param('id')) ? $this->model->find()->all_as_array() : $this->model->all_as_array();
@@ -207,19 +254,10 @@ class Huia_Controller_Api_App extends Controller {
 		return $this->json($result);
 	}
 
-	public function config($type, $model_name = NULL)
-	{
-		$model_name = ($model_name) ? $model_name : $this->model_name;
-		$config = Kohana::$config->load('huia/api');
-		$custom_filters = $config->get('custom_filters');
-		$regexp = Arr::path($custom_filters, strtolower(Inflector::singular($model_name)).'.'.$type);
-		return ($regexp !== NULL) ? $regexp : Arr::get($config->get('filters'), $type);
-	}
-
 	public function filter_expected($values, $model_name = NULL)
 	{
-		$ignored = $this->config('ignored', $model_name);
-		$expected = $this->config('expected', $model_name);
+		$ignored = $this->config('filters', 'ignored', $model_name);
+		$expected = $this->config('filters', 'expected', $model_name);
 
 		foreach ($values as $key => $value)
 		{
