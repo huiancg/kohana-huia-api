@@ -92,7 +92,7 @@ class Huia_Controller_Api_App extends Controller {
 
 	public function query()
 	{
-		$this->query = @json_decode($this->request->post('query'));
+		$this->query = $this->request->post('_query');
 
 		if ( ! $this->query)
 		{
@@ -182,8 +182,6 @@ class Huia_Controller_Api_App extends Controller {
 		
 		$key = 'api.'. $this->model_name . '.' . $this->model_id . '.' . $this->request->post('query');
 
-		$user = FALSE;
-
 		if ($caching)
 		{
 			if ($result = Cache::instance()->get($key))
@@ -201,6 +199,8 @@ class Huia_Controller_Api_App extends Controller {
 
 		$read = $this->config('permissions', 'read');
 
+		$user = FALSE;
+
 		// return only user data
 		if ($this->has_user())
 		{
@@ -209,8 +209,6 @@ class Huia_Controller_Api_App extends Controller {
 			{
 				throw HTTP_Exception::factory(403, 'This object is not yours!');
 			}
-
-			$read = TRUE;
 			
 			$this->model->where('user_id', '=', ($user) ? $user->id : NULL);
 		}
@@ -250,7 +248,7 @@ class Huia_Controller_Api_App extends Controller {
 		{
 			Cache::instance()->set($key, $result, $_caching);
 		}
-		
+
 		return $this->json($result);
 	}
 
