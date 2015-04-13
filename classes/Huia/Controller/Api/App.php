@@ -104,9 +104,6 @@ class Huia_Controller_Api_App extends Controller {
 			switch ($query[0])
 			{
 				case 'where':
-				case 'open_where':
-				case 'close_where':
-				case 'or':
 					$this->model->{$query[0]}($query[1], self::operation($query[2]), $query[3]);
 					break;
 				
@@ -123,6 +120,10 @@ class Huia_Controller_Api_App extends Controller {
 					$this->model->order_by($field, $direction);
 					break;
 
+				case 'or':
+					$this->model->or_where($query[1], self::operation($query[2]), $query[3]);
+					break;
+
 				case 'limit':
 				case 'offset':
 				case 'distinct':
@@ -130,8 +131,22 @@ class Huia_Controller_Api_App extends Controller {
 					$this->model->{$query[0]}($query[1]);
 					break;
 
+				case 'where_open':
+				case 'where_close':
+					$this->model->{$query[0]}();
+					break;
+				
+				case 'or_open':
+					$this->model->or_where_open();
+					break;
+				
+				case 'or_close':
+					$this->model->or_where_close();
+					break;
+
 				case 'sum':
-					$this->model->select(array(DB::expr('SUM('.$query[1].')'), 'total_'.$query[1]));
+					$name = (isset($query[2]) AND $query[2]) ? $query[2] : 'total_'.$query[1];
+					$this->model->select(array(DB::expr('SUM('.$query[1].')'), $name));
 					break;
 
 				default:
