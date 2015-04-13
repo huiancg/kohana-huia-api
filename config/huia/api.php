@@ -1,6 +1,31 @@
 <?php defined('SYSPATH') or die('No direct script access.');
 
 return array(
+
+	'queries' => array(
+		
+		'directions' => array(
+			'ASC', 
+			'DESC', 
+			'RAND()'
+		),
+
+		'operations' => array(
+			'=', 
+			'<', 
+			'<=', 
+			'>', 
+			'>=', 
+			'!=', 
+			'in', 
+			'between', 
+			'not in', 
+			'not between', 
+			'like', 
+			'null', 
+			'not null'
+		),
+	),
 	
 	'permissions' => array(
 		'write' => FALSE,

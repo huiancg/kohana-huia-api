@@ -12,10 +12,6 @@ class Huia_Controller_Api_App extends Controller {
 
 	public $model_name = NULL;
 
-	const OPERATIONS = array('=', '<', '<=', '>', '>=', '!=', 'in', 'between', 'not in', 'not between', 'like', 'null', 'not null');
-	
-	const DIRECTIONS = array('ASC', 'DESC', 'RAND()');
-
 	protected static $_has_user = array();
 
 	protected static $_config = NULL;
@@ -74,7 +70,7 @@ class Huia_Controller_Api_App extends Controller {
 
 	public function direction($direction)
 	{
-		if ( ! in_array($direction, self::DIRECTIONS))
+		if ( ! in_array($direction, $this->config('queries', 'directions')))
 		{
 			throw HTTP_Exception::factory(403, __('Invalid direction \':direction\'.', array(':operation' => $operation)));
 		}
@@ -83,7 +79,7 @@ class Huia_Controller_Api_App extends Controller {
 
 	public function operation($operation)
 	{
-		if ( ! in_array($operation, self::OPERATIONS))
+		if ( ! in_array($operation, $this->config('queries', 'operations')))
 		{
 			throw HTTP_Exception::factory(403, __('Invalid operation \':operation\'.', array(':operation' => $operation)));
 		}
@@ -98,6 +94,8 @@ class Huia_Controller_Api_App extends Controller {
 		{
 			return;
 		}
+
+		$limit = 100;
 
 		foreach ((array)$this->query as $query)
 		{
@@ -125,6 +123,9 @@ class Huia_Controller_Api_App extends Controller {
 					break;
 
 				case 'limit':
+					$limit = $query[1];
+					break;
+
 				case 'offset':
 				case 'distinct':
 				case 'group_by':
@@ -154,6 +155,8 @@ class Huia_Controller_Api_App extends Controller {
 					break;
 			}
 		}
+
+		$this->model->limit($limit);
 
 	}
 
@@ -255,9 +258,15 @@ class Huia_Controller_Api_App extends Controller {
 			throw HTTP_Exception::factory(403, 'This object require read permission!');
 		}
 
-		$result = ($this->request->param('id')) ? $this->model->find()->all_as_array() : $this->model->all_as_array();
-
-		$result = $this->filter_expected($result);
+		if ($this->request->post('_count_all'))
+		{
+			$result = $this->model->count_all();
+		}
+		else
+		{
+			$result = ($this->request->param('id')) ? $this->model->find()->all_as_array() : $this->model->all_as_array();
+			$result = $this->filter_expected($result);
+		}
 
 		if ($caching)
 		{
