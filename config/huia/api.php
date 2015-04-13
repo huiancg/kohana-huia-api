@@ -31,6 +31,8 @@ return array(
 		'write' => FALSE,
 		'read' => FALSE,
 
+		'query' => TRUE,
+
 		'self_write' => TRUE,
 		'self_read' => TRUE,
 		
@@ -43,12 +45,16 @@ return array(
 		'product' => array(
 			'write' => TRUE,
 		),
+		'category' => array(
+			'read' => TRUE,
+		),
 		*/
 	),
 	
 	'filters' => array(
 		'ignored' => '^user$|password|_at$',
 		'expected' => NULL,
+		'query' => NULL,
 	),
 	
 	'custom_filters' => array(
@@ -60,7 +66,10 @@ return array(
 			'ignored' => FALSE,
 		),
 		'category' => array(
-			'expected' => array('id', 'name'),
+			'ignored' => '^gastronomies|published|posts|user$|password|_at$',
+			'query' => array(
+				array('where', 'published', '=', 1),
+			),
 		),
 		*/
 	),

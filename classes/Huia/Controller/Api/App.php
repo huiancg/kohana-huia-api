@@ -64,8 +64,6 @@ class Huia_Controller_Api_App extends Controller {
 		{
 			$this->model->where('id', '=', $this->model_id);
 		}
-
-		$this->query();
 	}
 
 	public function direction($direction)
@@ -86,23 +84,19 @@ class Huia_Controller_Api_App extends Controller {
 		return strtoupper($operation);
 	}
 
-	public function query()
+	public function query($model, $queries, $limit = NULL)
 	{
-		$this->query = $this->request->post('_query');
-
-		if ( ! $this->query)
+		if ( ! $queries OR empty($queries))
 		{
 			return;
 		}
 
-		$limit = 100;
-
-		foreach ((array)$this->query as $query)
+		foreach ((array)$queries as $query)
 		{
 			switch ($query[0])
 			{
 				case 'where':
-					$this->model->{$query[0]}($query[1], self::operation($query[2]), $query[3]);
+					$model->{$query[0]}($query[1], self::operation($query[2]), $query[3]);
 					break;
 				
 				case 'order_by':
@@ -115,11 +109,11 @@ class Huia_Controller_Api_App extends Controller {
 						$field = DB::expr('RAND()');
 					}
 					
-					$this->model->order_by($field, $direction);
+					$model->order_by($field, $direction);
 					break;
 
 				case 'or':
-					$this->model->or_where($query[1], self::operation($query[2]), $query[3]);
+					$model->or_where($query[1], self::operation($query[2]), $query[3]);
 					break;
 
 				case 'limit':
@@ -129,25 +123,25 @@ class Huia_Controller_Api_App extends Controller {
 				case 'offset':
 				case 'distinct':
 				case 'group_by':
-					$this->model->{$query[0]}($query[1]);
+					$model->{$query[0]}($query[1]);
 					break;
 
 				case 'where_open':
 				case 'where_close':
-					$this->model->{$query[0]}();
+					$model->{$query[0]}();
 					break;
 				
 				case 'or_open':
-					$this->model->or_where_open();
+					$model->or_where_open();
 					break;
 				
 				case 'or_close':
-					$this->model->or_where_close();
+					$model->or_where_close();
 					break;
 
 				case 'sum':
 					$name = (isset($query[2]) AND $query[2]) ? $query[2] : 'total_'.$query[1];
-					$this->model->select(array(DB::expr('SUM('.$query[1].')'), $name));
+					$model->select(array(DB::expr('SUM('.$query[1].')'), $name));
 					break;
 
 				default:
@@ -156,8 +150,12 @@ class Huia_Controller_Api_App extends Controller {
 			}
 		}
 
-		$this->model->limit($limit);
+		if ($limit)
+		{
+			$model->limit($limit);
+		}
 
+		return $model;
 	}
 
 	public function action_index()
@@ -208,6 +206,23 @@ class Huia_Controller_Api_App extends Controller {
 				return $this->json($result);
 			}
 		}
+
+		if ($this->config('permissions', 'query'))
+		{
+			$queries = $this->request->post('_query');
+			$queries = ($queries) ? $queries : array(); 
+		}
+		else
+		{
+			$queries = array();
+		}
+		
+		if ($filter_queries = $this->config('filters', 'query'))
+		{
+			$queries = Arr::merge($queries, $filter_queries);
+		}
+
+		$this->model = $this->query($this->model, $queries, 100);
 
 		$count = clone $this->model;
 		if ($this->request->param('id') AND ! $count->count_all())
