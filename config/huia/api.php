@@ -44,6 +44,9 @@ return array(
 		'user' => array(
 			'read' => FALSE,
 		),
+		'log' => array(
+			'read' => FALSE,
+		),
 		/*
 		'product' => array(
 			'write' => TRUE,
