@@ -88,7 +88,7 @@ class Huia_Controller_Api_App extends Controller {
 	{
 		if ( ! $queries OR empty($queries))
 		{
-			return;
+			return $model;
 		}
 
 		foreach ((array)$queries as $query)
@@ -223,6 +223,8 @@ class Huia_Controller_Api_App extends Controller {
 		}
 
 		$this->model = $this->query($this->model, $queries, 100);
+		echo Debug::vars($this->model);
+		exit();
 
 		$count = clone $this->model;
 		if ($this->request->param('id') AND ! $count->count_all())
