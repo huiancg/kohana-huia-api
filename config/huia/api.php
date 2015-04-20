@@ -29,7 +29,7 @@ return array(
 	
 	'permissions' => array(
 		'write' => FALSE,
-		'read' => FALSE,
+		'read' => TRUE,
 
 		'query' => TRUE,
 
@@ -41,6 +41,9 @@ return array(
 	),
 
 	'custom_permissions' => array(
+		'user' => array(
+			'read' => FALSE,
+		),
 		/*
 		'product' => array(
 			'write' => TRUE,
