@@ -232,24 +232,9 @@ class Huia_Controller_Api_App extends Controller {
 
 		$read = $this->config('permissions', 'read');
 
-		$user = FALSE;
-
-		// return only user data
-		if ($this->has_user())
+		if ( ! $read AND $role_read = $this->config('permissions', 'role_read'))
 		{
 			$user = Auth::instance()->get_user();
-			if ($this->request->param('id') AND ! $user)
-			{
-				throw HTTP_Exception::factory(403, 'This object is not yours!');
-			}
-			
-			$this->model->where('user_id', '=', ($user) ? $user->id : NULL);
-		}
-
-		$role_read = $this->config('permissions', 'role_read');
-		if ($role_read)
-		{
-			$user = ($user !== FALSE) ? $user : Auth::instance()->get_user();
 			if ( ! $user OR ! $user->has('roles', ORM::factory('Role')->where('name', 'IN', $role_read)))
 			{
 				throw HTTP_Exception::factory(403, 'This object require role_read permission!');
@@ -257,12 +242,19 @@ class Huia_Controller_Api_App extends Controller {
 
 			$read = TRUE;
 		}
-		else if ($this->has_user())
+		else if ( ! $read AND $this->has_user())
 		{
 			$self_read = $this->config('permissions', 'self_read');
-			if ( ! $self_read)
+
+			$user = Auth::instance()->get_user();
+			if ( ! $user AND $self_read)
 			{
 				throw HTTP_Exception::factory(403, 'This object require self_read permission!');
+			}
+			
+			if ($self_read)
+			{
+				$this->model->where('user_id', '=', ($user) ? $user->id : NULL);
 			}
 
 			$read = TRUE;
