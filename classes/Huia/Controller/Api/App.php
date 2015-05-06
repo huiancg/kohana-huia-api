@@ -46,7 +46,7 @@ class Huia_Controller_Api_App extends Controller {
 	{
 		parent::before();
 
-		$this->models = ORM::get_models();
+		$this->models = ORM_Autogen::get_models();
 
 		$this->model_name = ($this->request->param('model')) ? $this->request->param('model') : $this->request->controller();
 		
