@@ -25,6 +25,8 @@ return array(
 			'null', 
 			'not null'
 		),
+
+		'fields' => NULL,
 	),
 	
 	'permissions' => array(

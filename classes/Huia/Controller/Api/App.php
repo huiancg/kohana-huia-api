@@ -84,6 +84,16 @@ class Huia_Controller_Api_App extends Controller {
 		return strtoupper($operation);
 	}
 
+	public function field($field)
+	{
+		$config = $this->config('queries', 'fields');
+		if ($config AND ! in_array($field, $config))
+		{
+			throw HTTP_Exception::factory(403, __('Invalid field \':field\'.', array(':field' => $field)));
+		}
+		return $field;
+	}
+
 	public function query($model, $queries, $limit = NULL)
 	{
 		if ( ! $queries OR empty($queries))
@@ -96,7 +106,7 @@ class Huia_Controller_Api_App extends Controller {
 			switch ($query[0])
 			{
 				case 'where':
-					$model->{$query[0]}($query[1], self::operation($query[2]), $query[3]);
+					$model->{$query[0]}(self::field($query[1]), self::operation($query[2]), $query[3]);
 					break;
 				
 				case 'order_by':
@@ -109,11 +119,11 @@ class Huia_Controller_Api_App extends Controller {
 						$field = DB::expr('RAND()');
 					}
 					
-					$model->order_by($field, $direction);
+					$model->order_by(self::field($field), $direction);
 					break;
 
 				case 'or':
-					$model->or_where($query[1], self::operation($query[2]), $query[3]);
+					$model->or_where(self::field($query[1]), self::operation($query[2]), $query[3]);
 					break;
 
 				case 'limit':
@@ -123,7 +133,7 @@ class Huia_Controller_Api_App extends Controller {
 				case 'offset':
 				case 'distinct':
 				case 'group_by':
-					$model->{$query[0]}($query[1]);
+					$model->{$query[0]}(self::field($query[1]));
 					break;
 
 				case 'where_open':
@@ -141,7 +151,7 @@ class Huia_Controller_Api_App extends Controller {
 
 				case 'sum':
 					$name = (isset($query[2]) AND $query[2]) ? $query[2] : 'total_'.$query[1];
-					$model->select(array(DB::expr('SUM('.$query[1].')'), $name));
+					$model->select(array(DB::expr('SUM('.self::field($query[1]).')'), $name));
 					break;
 
 				default:
