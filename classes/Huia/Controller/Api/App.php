@@ -192,10 +192,6 @@ class Huia_Controller_Api_App extends Controller {
     }
     else if ($method === Request::GET)
     {
-      if ( ! $this->config('permissions', 'list'))
-      {
-          throw HTTP_Exception::factory(403, __('Cant list this object.'));
-      }
       $this->get();
     }
     else if ($method === Request::DELETE)
@@ -242,6 +238,11 @@ class Huia_Controller_Api_App extends Controller {
     if ($this->request->param('id') AND ! $count->count_all())
     {
       throw HTTP_Exception::factory(404, 'Not found!');;
+    }
+
+    if ( ! $this->request->param('id') AND empty($queries) AND ! $this->config('permissions', 'list'))
+    {
+        throw HTTP_Exception::factory(403, __('Cant list this object.'));
     }
 
     $read = $this->config('permissions', 'read');
@@ -375,7 +376,7 @@ class Huia_Controller_Api_App extends Controller {
     {
       throw HTTP_Exception::factory(403, 'Cant write this object.');
     }
-      
+
     $values = $this->filter_expected($values);
     $values = $this->filter_user($values);
 
@@ -405,7 +406,9 @@ class Huia_Controller_Api_App extends Controller {
         }
       }
 
-      return $this->json($this->model->all_as_array());
+      $result = $this->model->all_as_array();
+      $result = $this->filter_expected($result);
+      return $this->json($result);
     }
     catch (ORM_Validation_Exception $e)
     {
