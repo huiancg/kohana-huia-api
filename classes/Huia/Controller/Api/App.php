@@ -196,7 +196,10 @@ class Huia_Controller_Api_App extends Controller {
 
     $caching = Kohana::$caching AND ! Session::instance()->get('auth_user') AND $_caching;
     
-    $key = 'api.'. $this->model_name . '.' . Request::current()->uri() .'.' . URL::query() . '.' . join('.', $this->request->post());
+    $key = 'api.'. $this->model_name . '.' . 
+                Request::current()->uri() . '.' . 
+                http_build_query(Request::current()->query()) . '.' . 
+                http_build_query(Request::current()->post());
 
     if ($caching)
     {
