@@ -192,6 +192,10 @@ class Huia_Controller_Api_App extends Controller {
     }
     else if ($method === Request::GET)
     {
+      if ( ! $this->config('permissions', 'list'))
+      {
+          throw HTTP_Exception::factory(403, __('Cant list this object.'));
+      }
       $this->get();
     }
     else if ($method === Request::DELETE)

@@ -32,6 +32,7 @@ return array(
   'permissions' => array(
     'write' => FALSE,
     'read' => TRUE,
+    'list' => TRUE,
 
     'query' => TRUE,
 
@@ -49,14 +50,6 @@ return array(
     'log' => array(
       'read' => FALSE,
     ),
-    /*
-    'product' => array(
-      'write' => TRUE,
-    ),
-    'category' => array(
-      'read' => TRUE,
-    ),
-    */
   ),
   
   'filters' => array(
