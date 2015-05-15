@@ -370,6 +370,12 @@ class Huia_Controller_Api_App extends Controller {
   // save
   public function save($values, $update = FALSE)
   {
+    $write = $this->config('permissions', 'write');
+    if ( ! $write)
+    {
+      throw HTTP_Exception::factory(403, 'Cant write this object.');
+    }
+      
     $values = $this->filter_expected($values);
     $values = $this->filter_user($values);
 

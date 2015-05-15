@@ -36,10 +36,10 @@ return array(
 
     'query' => TRUE,
 
-    'self_write' => TRUE,
+    // 'self_write' => TRUE,
     'self_read' => TRUE,
     
-    'role_write' => NULL,
+    // 'role_write' => NULL,
     'role_read' => NULL,
   ),
 
