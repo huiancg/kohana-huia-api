@@ -4,11 +4,7 @@ class Huia_Controller_Api_App extends Controller {
 
   public $models = array();
 
-  public $query = NULL;
-
   public $model = NULL;
-
-  public $model_id = NULL;
 
   public $model_name = NULL;
 
@@ -55,15 +51,9 @@ class Huia_Controller_Api_App extends Controller {
       return;
     }
 
-    $this->model_id = Arr::get($this->request->post(), 'id', $this->request->param('id'));
     $this->model_name = ORM::get_model_name($this->model_name);
     
     $this->model = ORM::factory($this->model_name);
-    
-    if ($this->model_id)
-    {
-      $this->model->where('id', '=', $this->model_id);
-    }
   }
 
   public function direction($direction)
@@ -206,7 +196,7 @@ class Huia_Controller_Api_App extends Controller {
 
     $caching = Kohana::$caching AND ! Session::instance()->get('auth_user') AND $_caching;
     
-    $key = 'api.'. $this->model_name . '.' . $this->model_id . '.' . $this->request->post('query');
+    $key = 'api.'. $this->model_name . '.' . Request::current()->uri() .'.' . URL::query() . '.' . join('.', $this->request->post());
 
     if ($caching)
     {
@@ -225,6 +215,12 @@ class Huia_Controller_Api_App extends Controller {
     else
     {
       $queries = array();
+    }
+
+    if ($this->request->param('id'))
+    {
+      $queries[] = array('where', 'id', '=', $this->request->param('id'));
+      $queries[] = array('limit', 1);
     }
     
     if ($filter_queries = $this->config('filters', 'query'))
@@ -286,7 +282,7 @@ class Huia_Controller_Api_App extends Controller {
     }
     else
     {
-      $result = ($this->request->param('id')) ? $this->model->find()->all_as_array() : $this->model->all_as_array();
+      $result = $this->model->all_as_array();
       $result = $this->filter_expected($result);
     }
 
