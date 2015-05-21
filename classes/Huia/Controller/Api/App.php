@@ -367,6 +367,22 @@ class Huia_Controller_Api_App extends Controller {
     }
   }
 
+  public function filter_fields($values)
+  {
+    foreach ($this->model->as_array() as $key => $value)
+    {
+      if ($key === 'ip')
+      {
+        $values['ip'] = Request::$client_ip;
+      }
+      else if ($key === 'user_agent')
+      {
+        $values['user_agent'] = Request::$user_agent;
+      }
+    }
+    return $values;
+  }
+
   // save
   public function save($values, $update = FALSE)
   {
@@ -378,6 +394,7 @@ class Huia_Controller_Api_App extends Controller {
 
     $values = $this->filter_expected($values);
     $values = $this->filter_user($values);
+    $values = $this->filter_fields($values);
 
     $this->model->values($values);
 
