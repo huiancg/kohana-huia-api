@@ -228,7 +228,6 @@ class Huia_Controller_Api_App extends Controller {
     
     if ($filter_queries = $this->config('filters', 'query'))
     {
-      echo Debug::vars($filter_queries);
       $queries = Arr::merge($queries, $filter_queries);
     }
 
