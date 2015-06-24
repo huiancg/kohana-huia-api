@@ -228,6 +228,7 @@ class Huia_Controller_Api_App extends Controller {
     
     if ($filter_queries = $this->config('filters', 'query'))
     {
+      echo Debug::vars($filter_queries);
       $queries = Arr::merge($queries, $filter_queries);
     }
 
@@ -285,7 +286,10 @@ class Huia_Controller_Api_App extends Controller {
     }
     else
     {
-      $result = $this->model->all_as_array();
+      $result = $this->model->all_as_array(NULL, function(&$model) {
+        $queries = $this->config('filters', 'query', $model->table_name());
+        $model = $this->query($model, $queries, 100);
+      });
       $result = $this->filter_expected($result);
     }
 
