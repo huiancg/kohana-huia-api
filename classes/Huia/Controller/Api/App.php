@@ -287,7 +287,7 @@ class Huia_Controller_Api_App extends Controller {
     {
       $result = $this->model->all_as_array(NULL, function(&$model) {
         $queries = $this->config('filters', 'query', $model->table_name());
-        $model = $this->query($model, $queries, 100);
+        $model = $this->query($model, $queries);
       });
       $result = $this->filter_expected($result);
     }
