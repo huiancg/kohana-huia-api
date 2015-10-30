@@ -139,6 +139,12 @@ class Huia_Controller_Api_App extends Controller {
           $model->or_where_close();
           break;
 
+        case 'min':
+        case 'max':
+          $name = (isset($query[2]) AND $query[2]) ? $query[2] : $query[0] . '_' . $query[1];
+          $model->select(array(DB::expr($query[0].'('.self::field($query[1]).')'), $name));
+          break;
+
         case 'sum':
           $name = (isset($query[2]) AND $query[2]) ? $query[2] : 'total_'.$query[1];
           $model->select(array(DB::expr('SUM('.self::field($query[1]).')'), $name));
