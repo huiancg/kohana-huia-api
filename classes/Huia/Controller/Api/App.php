@@ -435,7 +435,7 @@ class Huia_Controller_Api_App extends Controller {
 
       $result = $this->model->all_as_array();
       $result = $this->filter_expected($result);
-      return $this->json($result);
+      $this->json($result);
     }
     catch (ORM_Validation_Exception $e)
     {
@@ -445,6 +445,17 @@ class Huia_Controller_Api_App extends Controller {
         $errors = array($e->getMessage());
       }
       $this->json(array('errors' => $errors));
+    }
+    
+    $this->flush();
+  }
+  
+  public function flush()
+  {
+    if (class_exists('Cache'))
+    {
+      // Flush all cache
+      Cache::instance()->delete_all();
     }
   }
 
@@ -461,6 +472,7 @@ class Huia_Controller_Api_App extends Controller {
     $values = $this->filter_user($values);
     
     $this->model->delete();
+    $this->flush();
   }
 
 }
