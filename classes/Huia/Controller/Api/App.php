@@ -296,14 +296,23 @@ class Huia_Controller_Api_App extends Controller {
         $model = $this->query($model, $queries);
       }, function($table_name, $object) {
         $api = 'Api_'.ORM::get_model_name($table_name);
-        if (class_exists($api))
+        if (class_exists($api) AND method_exists($api, 'get'))
         {
           $model_api = new $api;
           $object = $model_api->get($object);
         }
         return $object;
       });
+
       $result = $this->filter_expected($result);
+
+      // filter all
+      $api = 'Api_'.ORM::get_model_name($this->model->table_name());
+      if (class_exists($api) AND method_exists($api, 'get_all'))
+      {
+        $model_api = new $api;
+        $result = $model_api->get_all($result);
+      }
     }
 
     if ($caching)
