@@ -1,5 +1,6 @@
 # O que é o Huia API
 Sistema que utiliza como base o Huia Template para gerar dinâmicamente sistemas REST para manipulação de dados.
+Os retornos utilizam o metodo ORM::all_as_array(), descrito no Huia Template.
 
 # Geração da API
 A API REST é gerada com base nos modelos presentes na `classes/Models` e pode ser acessada na aplicação pela url `/api/`.
