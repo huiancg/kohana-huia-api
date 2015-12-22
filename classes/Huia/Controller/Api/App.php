@@ -414,6 +414,47 @@ class Huia_Controller_Api_App extends Controller {
   public function save($values, $update = FALSE)
   {
     $write = $this->config('permissions', 'write');
+    
+    if ( ! $write AND $role_write = $this->config('permissions', 'role_write'))
+    {
+      $user = Auth::instance()->get_user();
+      $roles = ORM::factory('Role')->where('name', 'IN', $role_write)->find_all()->as_array('id', NULL);
+      if ( ! $user OR ! $user->has('roles', $roles))
+      {
+        throw HTTP_Exception::factory(403, 'This object require role_write permission!');
+      }
+
+      $write = TRUE;
+    }
+    else if ( ! $write AND $this->has_user())
+    {
+      $self_write = $this->config('permissions', 'self_write');
+
+      $user = Auth::instance()->get_user();
+      
+      if ( ! $user AND $self_write)
+      {
+        throw HTTP_Exception::factory(403, 'This object require self_write permission!');
+      }
+      
+      if ($this->model->user_id AND $this->model->user_id != $user->id)
+      {
+        throw HTTP_Exception::factory(403, 'Cant write another user object.');
+      }
+      
+      if ( ! $update)
+      {
+        $this->model->user_id = $user->id;
+      }
+      
+      unset($values['user_id']);
+      
+      if ($self_write)
+      {
+        $write = TRUE;
+      }
+    }
+    
     if ( ! $write)
     {
       throw HTTP_Exception::factory(403, 'Cant write this object.');
