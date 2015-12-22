@@ -255,7 +255,8 @@ class Huia_Controller_Api_App extends Controller {
     if ( ! $read AND $role_read = $this->config('permissions', 'role_read'))
     {
       $user = Auth::instance()->get_user();
-      if ( ! $user OR ! $user->has('roles', ORM::factory('Role')->where('name', 'IN', $role_read)))
+      $roles = ORM::factory('Role')->where('name', 'IN', $role_read)->find_all()->as_array('id', NULL);
+      if ( ! $user OR ! $user->has('roles', $roles))
       {
         throw HTTP_Exception::factory(403, 'This object require role_read permission!');
       }
