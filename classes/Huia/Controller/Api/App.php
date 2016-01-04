@@ -184,8 +184,8 @@ class Huia_Controller_Api_App extends Controller {
 
     if ($method === Request::POST OR $method === Request::PUT)
     {
-      parse_str(file_get_contents('php://input'), $put_vars);
-      $put_vars = Kohana::sanitize((array) $put_vars);
+      $put_vars = (array) @json_decode($this->request->body(), TRUE);
+      $put_vars = Kohana::sanitize($put_vars);
 
       $values = Arr::merge($this->request->post(), $put_vars);
 
