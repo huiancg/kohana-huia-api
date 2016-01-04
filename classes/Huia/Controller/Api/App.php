@@ -413,6 +413,11 @@ class Huia_Controller_Api_App extends Controller {
   // save
   public function save($values, $update = FALSE)
   {
+    if (Arr::get($values, 'id') AND $this->config('permissions', 'update'))
+    {
+      $this->model = ORM::factory($this->model_name, Arr::get($values, 'id'));
+    }
+
     $write = $this->config('permissions', 'write');
     
     if ( ! $write AND $role_write = $this->config('permissions', 'role_write'))
