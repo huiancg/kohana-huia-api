@@ -533,15 +533,15 @@ class Huia_Controller_Api_App extends Controller {
 
   public function delete()
   {
-    $values = $this->model->as_array();
-    
-    if ( ! Arr::get($values, 'id') OR ! $this->request->param('id'))
+    $this->model = $this->model->where('id', '=', $this->request->param('id'))->find();
+
+    if ( ! $this->model->loaded())
     {
       throw HTTP_Exception::factory(404, 'Not found!');
     }
     
     // check user
-    $values = $this->filter_user($values);
+    $values = $this->filter_user($this->model->as_array());
     
     $this->model->delete();
     $this->flush();
