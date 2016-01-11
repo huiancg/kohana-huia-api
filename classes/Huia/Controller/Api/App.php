@@ -550,6 +550,8 @@ class Huia_Controller_Api_App extends Controller {
     
     $this->model->delete();
     $this->flush();
+
+    $this->json(array('success' => TRUE));
   }
 
 }
