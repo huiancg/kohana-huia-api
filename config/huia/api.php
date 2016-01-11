@@ -32,6 +32,7 @@ return array(
   'permissions' => array(
     'write' => FALSE,
     'read' => TRUE,
+    'update' => FALSE,
     'list' => TRUE,
 
     'query' => TRUE,

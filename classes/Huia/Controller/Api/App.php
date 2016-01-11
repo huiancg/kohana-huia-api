@@ -182,9 +182,24 @@ class Huia_Controller_Api_App extends Controller {
     $method = $this->request->post('_method');
     $method = ($method) ? $method : $this->request->method();
 
-    if ($method === Request::POST)
+    if ($method === Request::POST OR $method === Request::PUT)
     {
-      $this->save($this->request->post());
+      $body_vars = (array) @json_decode($this->request->body());
+      $body_vars = Kohana::sanitize($body_vars);
+
+      $values = Arr::merge($this->request->post(), $body_vars);
+
+      parse_str(file_get_contents('php://input'), $php_vars);
+      $php_vars = Kohana::sanitize($php_vars);
+
+      $values = Arr::merge($values, $php_vars);
+
+      if ($this->request->param('id'))
+      {
+        $values['id'] = $this->request->param('id');
+      }
+
+      $this->save($values);
     }
     else if ($method === Request::GET)
     {
@@ -255,7 +270,8 @@ class Huia_Controller_Api_App extends Controller {
     if ( ! $read AND $role_read = $this->config('permissions', 'role_read'))
     {
       $user = Auth::instance()->get_user();
-      if ( ! $user OR ! $user->has('roles', ORM::factory('Role')->where('name', 'IN', $role_read)))
+      $roles = ORM::factory('Role')->where('name', 'IN', $role_read)->find_all()->as_array('id', NULL);
+      if ( ! $user OR ! $user->has('roles', $roles))
       {
         throw HTTP_Exception::factory(403, 'This object require role_read permission!');
       }
@@ -412,7 +428,53 @@ class Huia_Controller_Api_App extends Controller {
   // save
   public function save($values, $update = FALSE)
   {
+    if (Arr::get($values, 'id') AND $this->config('permissions', 'update'))
+    {
+      $this->model = ORM::factory($this->model_name, Arr::get($values, 'id'));
+    }
+
     $write = $this->config('permissions', 'write');
+    
+    if ( ! $write AND $role_write = $this->config('permissions', 'role_write'))
+    {
+      $user = Auth::instance()->get_user();
+      $roles = ORM::factory('Role')->where('name', 'IN', $role_write)->find_all()->as_array('id', NULL);
+      if ( ! $user OR ! $user->has('roles', $roles))
+      {
+        throw HTTP_Exception::factory(403, 'This object require role_write permission!');
+      }
+
+      $write = TRUE;
+    }
+    else if ( ! $write AND $this->has_user())
+    {
+      $self_write = $this->config('permissions', 'self_write');
+
+      $user = Auth::instance()->get_user();
+      
+      if ( ! $user AND $self_write)
+      {
+        throw HTTP_Exception::factory(403, 'This object require self_write permission!');
+      }
+      
+      if ($this->model->user_id AND $this->model->user_id != $user->id)
+      {
+        throw HTTP_Exception::factory(403, 'Cant write another user object.');
+      }
+      
+      if ( ! $update)
+      {
+        $this->model->user_id = $user->id;
+      }
+      
+      unset($values['user_id']);
+      
+      if ($self_write)
+      {
+        $write = TRUE;
+      }
+    }
+    
     if ( ! $write)
     {
       throw HTTP_Exception::factory(403, 'Cant write this object.');
@@ -476,15 +538,15 @@ class Huia_Controller_Api_App extends Controller {
 
   public function delete()
   {
-    $values = $this->model->as_array();
-    
-    if ( ! Arr::get($values, 'id') OR ! $this->request->param('id'))
+    $this->model = $this->model->where('id', '=', $this->request->param('id'))->find();
+
+    if ( ! $this->model->loaded())
     {
       throw HTTP_Exception::factory(404, 'Not found!');
     }
     
     // check user
-    $values = $this->filter_user($values);
+    $values = $this->filter_user($this->model->as_array());
     
     $this->model->delete();
     $this->flush();
