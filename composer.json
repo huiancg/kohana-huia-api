@@ -2,7 +2,7 @@
   "name": "huiancg/kohana-huia-api",
   "type": "kohana-module",
   "require": {
-    "huiancg/kohana-huia": "~2.2",
+    "huiancg/kohana-huia": "~2.3",
     "composer/installers": "~1.0",
     "kohana/core": ">=3.3",
     "php": ">=5.3.3"
